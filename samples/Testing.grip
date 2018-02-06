@@ -1,0 +1,136 @@
+<grip:Pipeline>
+  <sources>
+    <grip:MultiImageFile>
+      <property name="index" value="0"/>
+      <property name="numImages" value="22"/>
+      <property name="path[0]" value="/Users/jackson/git/GRIP/samples/images/IMG_6200.jpg"/>
+      <property name="path[1]" value="/Users/jackson/git/GRIP/samples/images/IMG_6201.jpg"/>
+      <property name="path[2]" value="/Users/jackson/git/GRIP/samples/images/IMG_6202.jpg"/>
+      <property name="path[3]" value="/Users/jackson/git/GRIP/samples/images/IMG_6203.jpg"/>
+      <property name="path[4]" value="/Users/jackson/git/GRIP/samples/images/IMG_6204.jpg"/>
+      <property name="path[5]" value="/Users/jackson/git/GRIP/samples/images/IMG_6205.jpg"/>
+      <property name="path[6]" value="/Users/jackson/git/GRIP/samples/images/IMG_6206.jpg"/>
+      <property name="path[7]" value="/Users/jackson/git/GRIP/samples/images/IMG_6212.jpg"/>
+      <property name="path[8]" value="/Users/jackson/git/GRIP/samples/images/IMG_6214.jpg"/>
+      <property name="path[9]" value="/Users/jackson/git/GRIP/samples/images/IMG_6216.jpg"/>
+      <property name="path[10]" value="/Users/jackson/git/GRIP/samples/images/IMG_6217.jpg"/>
+      <property name="path[11]" value="/Users/jackson/git/GRIP/samples/images/IMG_6218.jpg"/>
+      <property name="path[12]" value="/Users/jackson/git/GRIP/samples/images/IMG_6219.jpg"/>
+      <property name="path[13]" value="/Users/jackson/git/GRIP/samples/images/IMG_6220.jpg"/>
+      <property name="path[14]" value="/Users/jackson/git/GRIP/samples/images/IMG_6224.jpg"/>
+      <property name="path[15]" value="/Users/jackson/git/GRIP/samples/images/IMG_6225.jpg"/>
+      <property name="path[16]" value="/Users/jackson/git/GRIP/samples/images/IMG_6227.jpg"/>
+      <property name="path[17]" value="/Users/jackson/git/GRIP/samples/images/IMG_6228.jpg"/>
+      <property name="path[18]" value="/Users/jackson/git/GRIP/samples/images/IMG_6229.jpg"/>
+      <property name="path[19]" value="/Users/jackson/git/GRIP/samples/images/IMG_6230.jpg"/>
+      <property name="path[20]" value="/Users/jackson/git/GRIP/samples/images/IMG_6231.jpg"/>
+      <property name="path[21]" value="/Users/jackson/git/GRIP/samples/images/IMG_6242.jpg"/>
+    </grip:MultiImageFile>
+  </sources>
+  <steps>
+    <grip:Step name="Resize Image">
+      <grip:Input step="0" socket="0"/>
+      <grip:Input step="0" socket="1">
+        <value>320.0</value>
+      </grip:Input>
+      <grip:Input step="0" socket="2">
+        <value>240.0</value>
+      </grip:Input>
+      <grip:Input step="0" socket="3">
+        <value>CUBIC</value>
+      </grip:Input>
+      <grip:Output step="0" socket="0" previewed="false"/>
+    </grip:Step>
+    <grip:Step name="CV Threshold">
+      <grip:Input step="1" socket="0"/>
+      <grip:Input step="1" socket="1">
+        <value>234.0</value>
+      </grip:Input>
+      <grip:Input step="1" socket="2">
+        <value>1.0</value>
+      </grip:Input>
+      <grip:Input step="1" socket="3">
+        <value>THRESH_TOZERO</value>
+      </grip:Input>
+      <grip:Output step="1" socket="0" previewed="false"/>
+    </grip:Step>
+    <grip:Step name="Blur">
+      <grip:Input step="2" socket="0"/>
+      <grip:Input step="2" socket="1">
+        <value>GAUSSIAN</value>
+      </grip:Input>
+      <grip:Input step="2" socket="2">
+        <value>2.7027027027027026</value>
+      </grip:Input>
+      <grip:Output step="2" socket="0" previewed="false"/>
+    </grip:Step>
+    <grip:Step name="Find Blobs">
+      <grip:Input step="3" socket="0"/>
+      <grip:Input step="3" socket="1">
+        <value>0.0</value>
+      </grip:Input>
+      <grip:Input step="3" socket="2">
+        <value>
+          <double>0.0</double>
+          <double>1.0</double>
+        </value>
+      </grip:Input>
+      <grip:Input step="3" socket="3">
+        <value>false</value>
+      </grip:Input>
+      <grip:Output step="3" socket="0" previewed="true"/>
+    </grip:Step>
+    <grip:Step name="Find Line In Blobs">
+      <grip:Input step="4" socket="0"/>
+      <grip:Input step="4" socket="1">
+        <value>1.0</value>
+      </grip:Input>
+      <grip:Input step="4" socket="2">
+        <value>5.405405405405405</value>
+      </grip:Input>
+      <grip:Input step="4" socket="3">
+        <value>100.0</value>
+      </grip:Input>
+      <grip:Output step="4" socket="0" previewed="true"/>
+    </grip:Step>
+  </steps>
+  <connections>
+    <grip:Connection>
+      <grip:Output step="1" socket="0" previewed="false"/>
+      <grip:Input step="2" socket="0"/>
+    </grip:Connection>
+    <grip:Connection>
+      <grip:Output step="0" socket="0" previewed="false"/>
+      <grip:Input step="1" socket="0"/>
+    </grip:Connection>
+    <grip:Connection>
+      <grip:Output source="0" socket="0" previewed="false"/>
+      <grip:Input step="0" socket="0"/>
+    </grip:Connection>
+    <grip:Connection>
+      <grip:Output step="2" socket="0" previewed="false"/>
+      <grip:Input step="3" socket="0"/>
+    </grip:Connection>
+    <grip:Connection>
+      <grip:Output step="3" socket="0" previewed="true"/>
+      <grip:Input step="4" socket="0"/>
+    </grip:Connection>
+  </connections>
+  <settings>
+    <teamNumber>0</teamNumber>
+    <publishAddress>roboRIO-0-FRC.local</publishAddress>
+    <deployAddress>roboRIO-0-FRC.local</deployAddress>
+    <deployDir>/home/lvuser</deployDir>
+    <deployUser>lvuser</deployUser>
+    <deployJavaHome>/usr/local/frc/JRE/</deployJavaHome>
+    <deployJvmOptions>-Xmx50m -XX:-OmitStackTraceInFastThrow -XX:+HeapDumpOnOutOfMemoryError -XX:MaxNewSize=16m</deployJvmOptions>
+  </settings>
+  <codeGenerationSettings>
+    <language>Java</language>
+    <className>GripPipeline</className>
+    <implementWpilibPipeline>false</implementWpilibPipeline>
+    <saveDir>/Users/jackson/GRIP</saveDir>
+    <packageName></packageName>
+    <moduleName>grip</moduleName>
+  </codeGenerationSettings>
+</grip:Pipeline>
