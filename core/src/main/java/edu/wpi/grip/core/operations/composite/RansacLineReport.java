@@ -110,10 +110,10 @@ public class RansacLineReport implements Publishable {
   }
 
   public static class Line {
-    public final double x1;
-    public final double y1;
-    public final double x2;
-    public final double y2;
+    public double x1;
+    public double y1;
+    public double x2;
+    public double y2;
 
     Line(double x1, double y1, double x2, double y2) {
       this.x1 = x1;
@@ -128,6 +128,32 @@ public class RansacLineReport implements Publishable {
 
     public double height() {
       return (y2 + y1) / 2.0;
+    }
+
+    /**
+     * Construct a new line that's co-linear with this one but extends
+     * to the edges of an image that is maxX pixels high by maxY pixels wide.
+     *
+     * @return Line that represents the extension of this line
+     */
+    public Line extendedLine(double maxX, double maxY) {
+      // Start by setting the line points to min and max coordinates
+      // We'll change either the x or y of both points below
+      Line extended = new Line(0, 0, maxX, maxY);
+      if (x1 == x2) {
+        // Special case if line is vertical (infinite slope)
+        extended.x1 = x1;
+        extended.x2 = x1;
+        // y values remain 0 and maxY
+      } else {
+        // General case where line can be written as y = mx + b
+        double m = (y1 - y2) / (x1 - x2);
+        double b = y1 - (m * x1);
+        // x values remain 0 and maxX
+        extended.y1 = m * extended.x1 + b;
+        extended.y2 = m * extended.x2 + b;
+      }
+      return extended;
     }
 
     @Override

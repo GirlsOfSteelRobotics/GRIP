@@ -71,6 +71,7 @@ public final class RansacLineSocketPreviewView extends ImageBasedPreviewView<Ran
       final int inliers = lineReport.getInliers();
       final int outliers = lineReport.getOutliers();
       final RansacLineReport.Line line = lineReport.getLine();
+      final RansacLineReport.Line extended = line.extendedLine(input.cols(), input.rows());
 
       // If a line was found, draw it on the image before displaying it
       if (inliers > 1) {
@@ -95,7 +96,12 @@ public final class RansacLineSocketPreviewView extends ImageBasedPreviewView<Ran
         circle(input, startPoint, 2, Scalar.WHITE, 2, LINE_8, 0);
         circle(input, endPoint, 2, Scalar.WHITE, 2, LINE_8, 0);
         // Draw a line across the entire image through the starting and ending points
-        line(input, startPoint, endPoint, Scalar.WHITE, 2, LINE_8, 0);
+        line(input, startPoint, endPoint, Scalar.RED, 4, LINE_8, 0);
+        startPoint.x((int) extended.x1);
+        startPoint.y((int) extended.y1);
+        endPoint.x((int) extended.x2);
+        endPoint.y((int) extended.y2);
+        line(input, startPoint, endPoint, Scalar.GREEN, 2, LINE_8, 0);
       }
       final Mat convertInput = input;
       platform.runAsSoonAsPossible(() -> {
