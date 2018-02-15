@@ -24,25 +24,25 @@
     <grip:Step name="Find Line In Blobs">
       <grip:Input step="1" socket="0"/>
       <grip:Input step="1" socket="1">
-        <value>1.0</value>
+        <value>25.162162162162172</value>
       </grip:Input>
       <grip:Input step="1" socket="2">
-        <value>0.0</value>
+        <value>40.31531531531532</value>
       </grip:Input>
       <grip:Input step="1" socket="3">
-        <value>100.0</value>
+        <value>0.0</value>
       </grip:Input>
       <grip:Output step="1" socket="0" previewed="true"/>
     </grip:Step>
   </steps>
   <connections>
     <grip:Connection>
-      <grip:Output source="0" socket="0" previewed="false"/>
-      <grip:Input step="0" socket="0"/>
-    </grip:Connection>
-    <grip:Connection>
       <grip:Output step="0" socket="0" previewed="true"/>
       <grip:Input step="1" socket="0"/>
+    </grip:Connection>
+    <grip:Connection>
+      <grip:Output source="0" socket="0" previewed="false"/>
+      <grip:Input step="0" socket="0"/>
     </grip:Connection>
   </connections>
   <settings>
