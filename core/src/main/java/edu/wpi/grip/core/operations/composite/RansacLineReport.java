@@ -5,8 +5,11 @@ import edu.wpi.grip.core.operations.network.PublishValue;
 import edu.wpi.grip.core.operations.network.Publishable;
 import edu.wpi.grip.core.sockets.NoSocketTypeLabel;
 import edu.wpi.grip.core.sockets.Socket;
+import org.bytedeco.javacpp.opencv_core.Point;
+import org.bytedeco.javacpp.opencv_core.Size;
 
 import static org.bytedeco.javacpp.opencv_core.Mat;
+import static org.bytedeco.javacpp.opencv_imgproc.clipLine;
 
 /**
  * This class contains the results of the RANSAC line detection algorithm. It has an input matrix (the image
@@ -110,10 +113,10 @@ public class RansacLineReport implements Publishable {
   }
 
   public static class Line {
-    public double x1;
-    public double y1;
-    public double x2;
-    public double y2;
+    public final double x1;
+    public final double y1;
+    public final double x2;
+    public final double y2;
 
     Line(double x1, double y1, double x2, double y2) {
       this.x1 = x1;
@@ -134,26 +137,64 @@ public class RansacLineReport implements Publishable {
      * Construct a new line that's co-linear with this one but extends
      * to the edges of an image that is maxX pixels high by maxY pixels wide.
      *
-     * @return Line that represents the extension of this line
+     * @return Line that represents the extension of this line or
+     * null if the line is completely outside (0,0) to (maxX, maxY) rectangle.
      */
     public Line extendedLine(double maxX, double maxY) {
-      // Start by setting the line points to min and max coordinates
-      // We'll change either the x or y of both points below
-      Line extended = new Line(0, 0, maxX, maxY);
+      Line extended;
       if (x1 == x2) {
         // Special case if line is vertical (infinite slope)
-        extended.x1 = x1;
-        extended.x2 = x1;
-        // y values remain 0 and maxY
+        // x values are the same as the (matching) x values in the original line
+        // y values are 0 and maxY, top and bottom of the image
+        extended = new Line(x1, 0, x1, maxY);
       } else {
         // General case where line can be written as y = mx + b
         double m = (y1 - y2) / (x1 - x2);
         double b = y1 - (m * x1);
-        // x values remain 0 and maxX
-        extended.y1 = m * extended.x1 + b;
-        extended.y2 = m * extended.x2 + b;
+        // x values are 0 and maxX, the left and right of the image
+        // y values are calculated as the y-intercepts at x=0 and x=maxX
+        Point pt1 = new Point(0, (int) (m * 0 + b));
+        Point pt2 = new Point((int) maxX, (int) (m * maxX + b));
+        // Either of the calculated points may be outside the image rectangle (< 0 or > max)
+        // clipLine will change pt1 and/or pt2 to bring them back into the image, if necessary
+        if (clipLine(new Size((int) maxX, (int) maxY), pt1, pt2)) {
+          extended = new Line(pt1.x(), pt1.y(), pt2.x(), pt2.y());
+        } else {
+          // clipLine reports that the resulting line is completely outside the image rectangle
+          extended = null;
+        }
       }
       return extended;
+    }
+
+    /**
+     * Return a line that is parallel to the original line but offset by the given
+     * perpendicular distance. Positive or negative offsets are allowed. Before drawing
+     * the resulting line, call extendedLine() to extend and clip the line to the image rectangle.
+     *
+     * @param offset Perpendicular distance from the original line to the returned line
+     *
+     * @return Line The parallel line
+     */
+    public Line offsetLine(double offset) {
+      Line offsetLine;
+      if (x1 == x2) {
+        // Special case if line is vertical (infinite slope)
+        // x values are offset from the (matching) x values in the original line
+        // y values are unchanged
+        offsetLine = new Line(x1 + offset, y1, x2 + offset, y2);
+      } else {
+        /* General case where line can be written as y = mx + b
+         * Create the offset line by shifting the y values up or down by the appropriate amount.
+         * The given offset is the perpendicular distance, so do some geometry to calculate the
+         * change in y direction.
+         */
+        double yOffset = offset / Math.cos(Math.toRadians(angle()));
+        // x values are unchanged
+        // y values are shifted from the original values by yOffset
+        offsetLine = new Line(x1, y1 + yOffset, x2, y2 + yOffset);
+      }
+      return offsetLine;
     }
 
     @Override
