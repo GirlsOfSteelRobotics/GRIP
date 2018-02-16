@@ -14,16 +14,20 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.VBox;
 
+<<<<<<< HEAD
 import java.util.List;
 
 import static org.bytedeco.javacpp.opencv_core.bitwise_xor;
+=======
+import static org.bytedeco.javacpp.opencv_core.LINE_8;
+>>>>>>> 60e2031088cdbdd4f3f7475b941ed4a7fe6b6a71
 import static org.bytedeco.javacpp.opencv_core.Mat;
 import static org.bytedeco.javacpp.opencv_core.Point;
 import static org.bytedeco.javacpp.opencv_core.Scalar;
-import static org.bytedeco.javacpp.opencv_core.LINE_8;
+import static org.bytedeco.javacpp.opencv_core.bitwise_xor;
 import static org.bytedeco.javacpp.opencv_imgproc.CV_GRAY2BGR;
-import static org.bytedeco.javacpp.opencv_imgproc.cvtColor;
 import static org.bytedeco.javacpp.opencv_imgproc.circle;
+import static org.bytedeco.javacpp.opencv_imgproc.cvtColor;
 import static org.bytedeco.javacpp.opencv_imgproc.line;
 
 /**
@@ -70,41 +74,60 @@ public final class RansacLineSocketPreviewView extends ImageBasedPreviewView<Ran
     synchronized (this) {
       final RansacLineReport lineReport = this.getSocket().getValue().get();
       Mat input = lineReport.getInput();
-      //final int threshold = lineReport.getThreshold();
+      final int threshold = lineReport.getThreshold();
       final List<BlobsReport.Blob> inliers = lineReport.getInliers();
       final List<BlobsReport.Blob> outliers = lineReport.getOutliers();
       final RansacLineReport.Line line = lineReport.getLine();
       final RansacLineReport.Line extended = line.extendedLine(input.cols(), input.rows());
+      final RansacLineReport.Line aboveThres = line.offsetLine(+threshold).extendedLine(input.cols(), input.rows());
+      final RansacLineReport.Line belowThres = line.offsetLine(-threshold).extendedLine(input.cols(), input.rows());
+
+      if (input.channels() == 3) {
+        input.copyTo(tmp);
+      } else {
+        cvtColor(input, tmp, CV_GRAY2BGR);
+      }
+
+      input = tmp;
+
+      // If we don't want to see the background image, set it to black
+      if (!this.showInputImage) {
+        bitwise_xor(tmp, tmp, tmp);
+      }
 
       // If a line was found, draw it on the image before displaying it
-      if (inliers.size() > 1) {
-        if (input.channels() == 3) {
-          input.copyTo(tmp);
-        } else {
-          cvtColor(input, tmp, CV_GRAY2BGR);
-        }
-
-        input = tmp;
-
-        // If we don't want to see the background image, set it to black
-        if (!this.showInputImage) {
-          bitwise_xor(tmp, tmp, tmp);
-        }
-
+      if (inliers > 1) {
         // Draw the starting and ending points for the line
         startPoint.x((int) line.x1);
         startPoint.y((int) line.y1);
         endPoint.x((int) line.x2);
         endPoint.y((int) line.y2);
-        circle(input, startPoint, 2, Scalar.WHITE, 2, LINE_8, 0);
-        circle(input, endPoint, 2, Scalar.WHITE, 2, LINE_8, 0);
+        circle(input, startPoint, 2, Scalar.WHITE, 4, LINE_8, 0);
+        circle(input, endPoint, 2, Scalar.WHITE, 4, LINE_8, 0);
         // Draw a line across the entire image through the starting and ending points
-        line(input, startPoint, endPoint, Scalar.RED, 4, LINE_8, 0);
-        startPoint.x((int) extended.x1);
-        startPoint.y((int) extended.y1);
-        endPoint.x((int) extended.x2);
-        endPoint.y((int) extended.y2);
-        line(input, startPoint, endPoint, Scalar.GREEN, 2, LINE_8, 0);
+        line(input, startPoint, endPoint, Scalar.RED, 3, LINE_8, 0);
+        if (extended != null) {
+          startPoint.x((int) extended.x1);
+          startPoint.y((int) extended.y1);
+          endPoint.x((int) extended.x2);
+          endPoint.y((int) extended.y2);
+          line(input, startPoint, endPoint, Scalar.WHITE, 1, LINE_8, 0);
+        }
+        // Draw parallel lines to visually indicate the threshold zone
+        if (aboveThres != null) {
+          startPoint.x((int) aboveThres.x1);
+          startPoint.y((int) aboveThres.y1);
+          endPoint.x((int) aboveThres.x2);
+          endPoint.y((int) aboveThres.y2);
+          line(input, startPoint, endPoint, Scalar.GREEN, 1, LINE_8, 0);
+        }
+        if (belowThres != null) {
+          startPoint.x((int) belowThres.x1);
+          startPoint.y((int) belowThres.y1);
+          endPoint.x((int) belowThres.x2);
+          endPoint.y((int) belowThres.y2);
+          line(input, startPoint, endPoint, Scalar.GREEN, 1, LINE_8, 0);
+        }
       }
       final Mat convertInput = input;
       platform.runAsSoonAsPossible(() -> {
