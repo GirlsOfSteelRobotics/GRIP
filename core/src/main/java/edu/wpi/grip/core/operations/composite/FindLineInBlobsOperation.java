@@ -10,6 +10,8 @@ import edu.wpi.grip.core.sockets.OutputSocket;
 import edu.wpi.grip.core.sockets.SocketHint;
 import edu.wpi.grip.core.sockets.SocketHints;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
@@ -26,7 +28,7 @@ public class FindLineInBlobsOperation implements Operation {
           new SocketHint.Builder<>(BlobsReport.class).identifier("Blobs").build();
 
   private final SocketHint<Number> thresholdHint = SocketHints.Inputs
-          .createNumberSliderSocketHint("Threshold", 10, 1, 150);
+          .createNumberSliderSocketHint("Threshold", 10, 1, 400);
 
   private final SocketHint<Number> iterationsHint = SocketHints.Inputs
           .createNumberSliderSocketHint("Max Iterations", 40, 0, 75);
@@ -87,9 +89,11 @@ public class FindLineInBlobsOperation implements Operation {
     final double pctInliers = pctInliersSocket.getValue().get().doubleValue();
     final List<BlobsReport.Blob> blobs = input.getBlobs();
     final int blobCount = blobs.size();
+
     // Variables for storing details on the best fitting line we've seen yet
     double bestScore = Double.MAX_VALUE;
-    int bestInliers = 0;
+    List<BlobsReport.Blob> bestInliers = Collections.emptyList();
+    List<BlobsReport.Blob> bestOutliers = Collections.emptyList();
     RansacLineReport.Line bestLine = new RansacLineReport.Line(0, 0, 0, 0);
 
     // We need at least two blobs to form a line, so return a zeroed out report if we don't have enough
@@ -106,7 +110,8 @@ public class FindLineInBlobsOperation implements Operation {
         // For all blobs, calculate the distance from this blob to a line defined by the two blobs selected above
         // The sum of those distances becomes the score for this pair of randomly selected blobs
         double score = 0.0;
-        int inliers = 0;
+        List<BlobsReport.Blob> inliers = new ArrayList<>();
+        List<BlobsReport.Blob> outliers = new ArrayList<>();
         for (int blobIndex = 0; blobIndex < blobCount; blobIndex++) {
           // Small optimization: we know the distance to either of the selected blobs is zero
           if (blobIndex == blobIdx1 || blobIndex == blobIdx2) {
@@ -115,24 +120,25 @@ public class FindLineInBlobsOperation implements Operation {
           double distance = findDistance(blobs.get(blobIdx1), blobs.get(blobIdx2), blobs.get(blobIndex));
           if (distance < threshold) {
             score += distance;
-            inliers++;
+            inliers.add(blobs.get(blobIndex));
           } else {
             score += threshold;
+            outliers.add(blobs.get(blobIndex));
           }
         }
         // Does this line have a better score than any we've seen yet?
         // Does it also meet our requirements for the minimum percentage of inlier blobs?
         // If so, save it as the best we've seen.
-        if (score < bestScore && ((double) inliers / (double) blobCount) >= (pctInliers/100.0)) {
+        if (score < bestScore && ((double) inliers.size() / (double) blobCount) >= (pctInliers/100.0)) {
           bestScore = score;
           bestInliers = inliers;
+          bestOutliers = outliers;
           bestLine = new RansacLineReport.Line(blobs.get(blobIdx1).x, blobs.get(blobIdx1).y,
                   blobs.get(blobIdx2).x, blobs.get(blobIdx2).y);
         }
       }
     }
     // Store the results in the RANSACLineReport object
-    lineReportSocket.setValue(new RansacLineReport(input.getInput(), threshold,
-            bestInliers, blobCount - bestInliers, bestLine));
+    lineReportSocket.setValue(new RansacLineReport(input.getInput(), threshold, bestInliers, bestOutliers, bestLine));
   }
 }

@@ -1,5 +1,6 @@
 package edu.wpi.grip.ui.preview;
 
+import edu.wpi.grip.core.operations.composite.BlobsReport;
 import edu.wpi.grip.core.operations.composite.RansacLineReport;
 import edu.wpi.grip.core.sockets.OutputSocket;
 import edu.wpi.grip.ui.util.GripPlatform;
@@ -12,6 +13,8 @@ import javafx.scene.control.Separator;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.VBox;
+
+import java.util.List;
 
 import static org.bytedeco.javacpp.opencv_core.bitwise_xor;
 import static org.bytedeco.javacpp.opencv_core.Mat;
@@ -68,13 +71,13 @@ public final class RansacLineSocketPreviewView extends ImageBasedPreviewView<Ran
       final RansacLineReport lineReport = this.getSocket().getValue().get();
       Mat input = lineReport.getInput();
       //final int threshold = lineReport.getThreshold();
-      final int inliers = lineReport.getInliers();
-      final int outliers = lineReport.getOutliers();
+      final List<BlobsReport.Blob> inliers = lineReport.getInliers();
+      final List<BlobsReport.Blob> outliers = lineReport.getOutliers();
       final RansacLineReport.Line line = lineReport.getLine();
       final RansacLineReport.Line extended = line.extendedLine(input.cols(), input.rows());
 
       // If a line was found, draw it on the image before displaying it
-      if (inliers > 1) {
+      if (inliers.size() > 1) {
         if (input.channels() == 3) {
           input.copyTo(tmp);
         } else {

@@ -6,12 +6,15 @@ import edu.wpi.grip.core.operations.network.Publishable;
 import edu.wpi.grip.core.sockets.NoSocketTypeLabel;
 import edu.wpi.grip.core.sockets.Socket;
 
+import java.util.Collections;
+import java.util.List;
+
 import static org.bytedeco.javacpp.opencv_core.Mat;
 
 /**
  * This class contains the results of the RANSAC line detection algorithm. It has an input matrix (the image
  * supplied to the algorithm) and the threshold used for RANSAC. The primary output is the line representing
- * the best fit found by RANSAC, but the count of inliers and outliers is also available.
+ * the best fit found by RANSAC, but the list of inliers and outliers is also available.
  * This is used by FindLineInBlobs as the type of its output socket, allowing other classes (like
  * GUI previews and line filtering operations) to have a type-safe way of operating on line
  * detection results and not just any random matrix.
@@ -20,8 +23,8 @@ import static org.bytedeco.javacpp.opencv_core.Mat;
 public class RansacLineReport implements Publishable {
   private final Mat input;
   private final int threshold;
-  private final int inliers;
-  private final int outliers;
+  private final List<BlobsReport.Blob> inliers;
+  private final List<BlobsReport.Blob> outliers;
   private final Line line;
 
   /**
@@ -29,17 +32,18 @@ public class RansacLineReport implements Publishable {
    * these reports.
    */
   public RansacLineReport() {
-    this(new Mat(), 0, 0, 0, new Line(0,0,0,0));
+    this(new Mat(), 0, Collections.emptyList(), Collections.emptyList(), new Line(0,0,0,0));
   }
 
   /**
-   * @param input The input matrix.
-   * @param threshold The threshold used during the line detection operation.
-   * @param inliers The count of blobs whose distance from line is less than or equal to threshold
-   * @param outliers The count of blobs whose distance from line is greater than threshold
-   * @param line The best line that has been found.
+   * @param input The input matrix
+   * @param threshold The threshold used during the line detection operation
+   * @param inliers The list of blobs whose distance from line is less than or equal to threshold
+   * @param outliers The list of blobs whose distance from line is greater than threshold
+   * @param line The best line that has been found
    */
-  public RansacLineReport(Mat input, int threshold, int inliers, int outliers, Line line) {
+  public RansacLineReport(Mat input, int threshold,
+                          List<BlobsReport.Blob> inliers, List<BlobsReport.Blob> outliers, Line line) {
     this.input = input;
     this.threshold = threshold;
     this.inliers = inliers;
@@ -60,14 +64,14 @@ public class RansacLineReport implements Publishable {
   public int getThreshold() { return this.threshold; }
 
   /**
-   * @return The number of inliers, the blobs whose distance from line is <= threshold.
+   * @return List of inliers, the blobs whose distance from line is <= threshold.
    */
-  public int getInliers() { return this.inliers; }
+  public List<BlobsReport.Blob> getInliers() { return this.inliers; }
 
   /**
-   * @return The number of outliers, the blobs whose distance from line is > threshold.
+   * @return List of outliers, the blobs whose distance from line is > threshold.
    */
-  public int getOutliers() { return this.outliers; }
+  public List<BlobsReport.Blob> getOutliers() { return this.outliers; }
 
   /**
    * @return The best fit line that was found for the input blobs.
