@@ -5,7 +5,6 @@ import edu.wpi.grip.core.operations.composite.RansacLineReport;
 import edu.wpi.grip.core.sockets.OutputSocket;
 import edu.wpi.grip.ui.util.GripPlatform;
 import edu.wpi.grip.ui.util.ImageConverter;
-
 import javafx.geometry.Orientation;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
@@ -14,21 +13,10 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.VBox;
 
-<<<<<<< HEAD
 import java.util.List;
 
-import static org.bytedeco.javacpp.opencv_core.bitwise_xor;
-=======
-import static org.bytedeco.javacpp.opencv_core.LINE_8;
->>>>>>> 60e2031088cdbdd4f3f7475b941ed4a7fe6b6a71
-import static org.bytedeco.javacpp.opencv_core.Mat;
-import static org.bytedeco.javacpp.opencv_core.Point;
-import static org.bytedeco.javacpp.opencv_core.Scalar;
-import static org.bytedeco.javacpp.opencv_core.bitwise_xor;
-import static org.bytedeco.javacpp.opencv_imgproc.CV_GRAY2BGR;
-import static org.bytedeco.javacpp.opencv_imgproc.circle;
-import static org.bytedeco.javacpp.opencv_imgproc.cvtColor;
-import static org.bytedeco.javacpp.opencv_imgproc.line;
+import static org.bytedeco.javacpp.opencv_core.*;
+import static org.bytedeco.javacpp.opencv_imgproc.*;
 
 /**
  * A <code>SocketPreviewView</code> that previews sockets containing containing the
@@ -40,8 +28,6 @@ public final class RansacLineSocketPreviewView extends ImageBasedPreviewView<Ran
   private final ImageView imageView = new ImageView();
   private final Label infoLabel = new Label();
   private final Mat tmp = new Mat();
-  private final Point startPoint = new Point();
-  private final Point endPoint = new Point();
   private final GripPlatform platform;
   @SuppressWarnings("PMD.ImmutableField")
   private boolean showInputImage = false;
@@ -69,6 +55,28 @@ public final class RansacLineSocketPreviewView extends ImageBasedPreviewView<Ran
     this.setContent(content);
   }
 
+  private void drawLine(Mat image, RansacLineReport.Line line, Scalar color, int thickness) {
+    final Point startPoint = new Point();
+    final Point endPoint = new Point();
+
+    // Extended lines are set to null if the entire line is outside the bounds of the image
+    if (line != null) {
+      startPoint.x((int) line.x1);
+      startPoint.y((int) line.y1);
+      endPoint.x((int) line.x2);
+      endPoint.y((int) line.y2);
+      line(image, startPoint, endPoint, color, thickness, LINE_8, 0);
+    }
+  }
+
+  private void drawBlob(Mat image, BlobsReport.Blob blob, Scalar color) {
+    final Point point = new Point();
+
+    point.x((int) blob.x);
+    point.y((int) blob.y);
+    circle(image, point, 2, color, 2, LINE_8, 0);
+  }
+
   @Override
   protected void convertImage() {
     synchronized (this) {
@@ -79,8 +87,8 @@ public final class RansacLineSocketPreviewView extends ImageBasedPreviewView<Ran
       final List<BlobsReport.Blob> outliers = lineReport.getOutliers();
       final RansacLineReport.Line line = lineReport.getLine();
       final RansacLineReport.Line extended = line.extendedLine(input.cols(), input.rows());
-      final RansacLineReport.Line aboveThres = line.offsetLine(+threshold).extendedLine(input.cols(), input.rows());
-      final RansacLineReport.Line belowThres = line.offsetLine(-threshold).extendedLine(input.cols(), input.rows());
+      final RansacLineReport.Line aboveThresh = line.offsetLine(+threshold).extendedLine(input.cols(), input.rows());
+      final RansacLineReport.Line belowThresh = line.offsetLine(-threshold).extendedLine(input.cols(), input.rows());
 
       if (input.channels() == 3) {
         input.copyTo(tmp);
@@ -95,45 +103,27 @@ public final class RansacLineSocketPreviewView extends ImageBasedPreviewView<Ran
         bitwise_xor(tmp, tmp, tmp);
       }
 
+      // Draw all the inlier blobs in green and outliers in red
+      for (BlobsReport.Blob blob : inliers) {
+        drawBlob(input, blob, Scalar.GREEN);
+      }
+      for (BlobsReport.Blob blob : outliers) {
+        drawBlob(input, blob, Scalar.RED);
+      }
+
       // If a line was found, draw it on the image before displaying it
-      if (inliers > 1) {
+      if (inliers.size() > 1) {
         // Draw the starting and ending points for the line
-        startPoint.x((int) line.x1);
-        startPoint.y((int) line.y1);
-        endPoint.x((int) line.x2);
-        endPoint.y((int) line.y2);
-        circle(input, startPoint, 2, Scalar.WHITE, 4, LINE_8, 0);
-        circle(input, endPoint, 2, Scalar.WHITE, 4, LINE_8, 0);
-        // Draw a line across the entire image through the starting and ending points
-        line(input, startPoint, endPoint, Scalar.RED, 3, LINE_8, 0);
-        if (extended != null) {
-          startPoint.x((int) extended.x1);
-          startPoint.y((int) extended.y1);
-          endPoint.x((int) extended.x2);
-          endPoint.y((int) extended.y2);
-          line(input, startPoint, endPoint, Scalar.WHITE, 1, LINE_8, 0);
-        }
+        drawLine(input, extended, Scalar.BLUE, 2);
         // Draw parallel lines to visually indicate the threshold zone
-        if (aboveThres != null) {
-          startPoint.x((int) aboveThres.x1);
-          startPoint.y((int) aboveThres.y1);
-          endPoint.x((int) aboveThres.x2);
-          endPoint.y((int) aboveThres.y2);
-          line(input, startPoint, endPoint, Scalar.GREEN, 1, LINE_8, 0);
-        }
-        if (belowThres != null) {
-          startPoint.x((int) belowThres.x1);
-          startPoint.y((int) belowThres.y1);
-          endPoint.x((int) belowThres.x2);
-          endPoint.y((int) belowThres.y2);
-          line(input, startPoint, endPoint, Scalar.GREEN, 1, LINE_8, 0);
-        }
+        drawLine(input, aboveThresh, Scalar.GREEN, 1);
+        drawLine(input, belowThresh, Scalar.GREEN, 1);
       }
       final Mat convertInput = input;
       platform.runAsSoonAsPossible(() -> {
         final Image image = this.imageConverter.convert(convertInput, getImageHeight());
         this.imageView.setImage(image);
-        this.infoLabel.setText("Found " + inliers + " inliers and " + outliers + " outliers");
+        this.infoLabel.setText("Found " + inliers.size() + " inliers and " + outliers.size() + " outliers");
       });
     }
   }

@@ -9,6 +9,11 @@ import edu.wpi.grip.core.sockets.InputSocket;
 import edu.wpi.grip.core.sockets.OutputSocket;
 import edu.wpi.grip.core.sockets.SocketHint;
 import edu.wpi.grip.core.sockets.SocketHints;
+import org.bytedeco.javacpp.helper.opencv_core;
+import org.bytedeco.javacpp.helper.opencv_core.CvArr;
+import org.bytedeco.javacpp.opencv_core.Mat;
+import org.bytedeco.javacpp.opencv_core.Point;
+import org.bytedeco.javacpp.opencv_imgproc;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -113,12 +118,8 @@ public class FindLineInBlobsOperation implements Operation {
         List<BlobsReport.Blob> inliers = new ArrayList<>();
         List<BlobsReport.Blob> outliers = new ArrayList<>();
         for (int blobIndex = 0; blobIndex < blobCount; blobIndex++) {
-          // Small optimization: we know the distance to either of the selected blobs is zero
-          if (blobIndex == blobIdx1 || blobIndex == blobIdx2) {
-            continue;
-          }
           double distance = findDistance(blobs.get(blobIdx1), blobs.get(blobIdx2), blobs.get(blobIndex));
-          if (distance < threshold) {
+          if (distance <= threshold) {
             score += distance;
             inliers.add(blobs.get(blobIndex));
           } else {
@@ -137,6 +138,16 @@ public class FindLineInBlobsOperation implements Operation {
                   blobs.get(blobIdx2).x, blobs.get(blobIdx2).y);
         }
       }
+      // Using the results of the search above, calculate the least-squares best fit line across all inliers
+/*
+      opencv_core.CvMatArray points = new opencv_core.CvMatArray(bestInliers.size());
+      for (BlobsReport.Blob blob : bestInliers) {
+        points.put(new Point((int) blob.x, (int) blob.y));
+      }
+      float[] line = new float[4];
+      opencv_imgproc.cvFitLine(points, opencv_imgproc.DIST_L2, 0, 0.01, 0.01, line);
+      bestLine = new RansacLineReport.Line(line[2], line[3], line[2]+line[0], line[3]+line[1]);
+*/
     }
     // Store the results in the RANSACLineReport object
     lineReportSocket.setValue(new RansacLineReport(input.getInput(), threshold, bestInliers, bestOutliers, bestLine));
