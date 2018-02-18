@@ -31,11 +31,11 @@ public class FindLineInBlobsOperation implements Operation {
   private final SocketHint<Number> thresholdHint = SocketHints.Inputs
           .createNumberSliderSocketHint("Threshold", 10, 1, 400);
 
-  private final SocketHint<Number> iterationsHint = SocketHints.Inputs
-          .createNumberSliderSocketHint("Max Iterations", 40, 0, 75);
-
   private final SocketHint<Number> pctInliersHint = SocketHints.Inputs
           .createNumberSliderSocketHint("Min % Inliers", 0, 0, 100);
+
+  private final SocketHint<Iterations> iterationsHint = SocketHints
+          .createEnumSocketHint("Iterations (# blobs ^ ?)", Iterations.TIMES_SQRT);
 
   private final SocketHint<RansacLineReport> lineHint = new SocketHint.Builder<>(RansacLineReport.class)
           .identifier("Line").initialValueSupplier(RansacLineReport::new).build();
@@ -43,8 +43,8 @@ public class FindLineInBlobsOperation implements Operation {
 
   private final InputSocket<BlobsReport> inputSocket;
   private final InputSocket<Number> thresholdSocket;
-  private final InputSocket<Number> iterationsSocket;
   private final InputSocket<Number> pctInliersSocket;
+  private final InputSocket<Iterations> iterationsSocket;
 
   private final OutputSocket<RansacLineReport> lineReportSocket;
 
@@ -52,8 +52,8 @@ public class FindLineInBlobsOperation implements Operation {
   public FindLineInBlobsOperation(InputSocket.Factory inputSocketFactory, OutputSocket.Factory outputSocketFactory) {
     this.inputSocket = inputSocketFactory.create(inputHint);
     this.thresholdSocket = inputSocketFactory.create(thresholdHint);
-    this.iterationsSocket = inputSocketFactory.create(iterationsHint);
     this.pctInliersSocket = inputSocketFactory.create(pctInliersHint);
+    this.iterationsSocket = inputSocketFactory.create(iterationsHint);
 
     this.lineReportSocket = outputSocketFactory.create(lineHint);
   }
@@ -63,8 +63,8 @@ public class FindLineInBlobsOperation implements Operation {
     return ImmutableList.of(
             inputSocket,
             thresholdSocket,
-            iterationsSocket,
-            pctInliersSocket
+            pctInliersSocket,
+            iterationsSocket
     );
   }
 
@@ -86,7 +86,7 @@ public class FindLineInBlobsOperation implements Operation {
   public void perform() {
     final BlobsReport input = inputSocket.getValue().get();
     final int threshold = thresholdSocket.getValue().get().intValue();
-    final int iterations = iterationsSocket.getValue().get().intValue();
+    final double iterations = iterationsSocket.getValue().get().value;
     final double pctInliers = pctInliersSocket.getValue().get().doubleValue();
     final List<BlobsReport.Blob> blobs = input.getBlobs();
     final int blobCount = blobs.size();
@@ -100,8 +100,8 @@ public class FindLineInBlobsOperation implements Operation {
 
     // We need at least two blobs to form a line, so return a zeroed out report if we don't have enough
     if (blobCount >= 2) {
-      // Repeat the process at most "iterations" times
-      for (int i = 0; i < iterations; i++) {
+      // Repeat the process at most "blobCount ^ iterations" times
+      for (int i = 0; i < Math.pow(blobCount, iterations); i++) {
         // Pick two random blobs, making sure we don't pick the same one twice
         Random rand = new Random();
         int blobIdx1 = rand.nextInt(blobCount);
@@ -148,5 +148,25 @@ public class FindLineInBlobsOperation implements Operation {
     }
     // Store the results in the RANSACLineReport object
     lineReportSocket.setValue(new RansacLineReport(input.getInput(), threshold, bestInliers, bestOutliers, bestLine));
+  }
+
+  private enum Iterations {
+    SQROOT("Square Root (^0.5)", 0.5),
+    LINEAR("Linear (^1)", 1.0),
+    TIMES_SQRT("Times Sq Root (^1.5)", 1.5),
+    SQUARED("Squared (^2)", 2.0);
+
+    final String label;
+    final double value;
+
+    Iterations(String label, double value) {
+      this.label = label;
+      this.value = value;
+    }
+
+    @Override
+    public String toString() {
+      return label;
+    }
   }
 }

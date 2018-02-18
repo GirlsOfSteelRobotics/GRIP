@@ -7,7 +7,7 @@
       <property name="path[20]" value="/Users/jackson/git/GRIP/samples/images/IMG_6231.jpg"/>
       <property name="path[12]" value="/Users/jackson/git/GRIP/samples/images/IMG_6219.jpg"/>
       <property name="path[15]" value="/Users/jackson/git/GRIP/samples/images/IMG_6225.jpg"/>
-      <property name="index" value="17"/>
+      <property name="index" value="19"/>
       <property name="path[18]" value="/Users/jackson/git/GRIP/samples/images/IMG_6229.jpg"/>
       <property name="path[0]" value="/Users/jackson/git/GRIP/samples/images/IMG_6200.jpg"/>
       <property name="path[3]" value="/Users/jackson/git/GRIP/samples/images/IMG_6203.jpg"/>
@@ -83,13 +83,13 @@
     <grip:Step name="Find Line In Blobs">
       <grip:Input step="4" socket="0"/>
       <grip:Input step="4" socket="1">
-        <value>12.29245283018868</value>
+        <value>10</value>
       </grip:Input>
       <grip:Input step="4" socket="2">
-        <value>47.15068842427333</value>
+        <value>0</value>
       </grip:Input>
       <grip:Input step="4" socket="3">
-        <value>0.0</value>
+        <value>TIMES_SQRT</value>
       </grip:Input>
       <grip:Output step="4" socket="0" previewed="true"/>
     </grip:Step>
@@ -100,20 +100,20 @@
       <grip:Input step="0" socket="0"/>
     </grip:Connection>
     <grip:Connection>
-      <grip:Output step="2" socket="0" previewed="false"/>
-      <grip:Input step="3" socket="0"/>
-    </grip:Connection>
-    <grip:Connection>
-      <grip:Output step="1" socket="0" previewed="false"/>
-      <grip:Input step="2" socket="0"/>
+      <grip:Output step="0" socket="0" previewed="true"/>
+      <grip:Input step="1" socket="0"/>
     </grip:Connection>
     <grip:Connection>
       <grip:Output step="3" socket="0" previewed="false"/>
       <grip:Input step="4" socket="0"/>
     </grip:Connection>
     <grip:Connection>
-      <grip:Output step="0" socket="0" previewed="true"/>
-      <grip:Input step="1" socket="0"/>
+      <grip:Output step="1" socket="0" previewed="false"/>
+      <grip:Input step="2" socket="0"/>
+    </grip:Connection>
+    <grip:Connection>
+      <grip:Output step="2" socket="0" previewed="false"/>
+      <grip:Input step="3" socket="0"/>
     </grip:Connection>
   </connections>
   <settings>
