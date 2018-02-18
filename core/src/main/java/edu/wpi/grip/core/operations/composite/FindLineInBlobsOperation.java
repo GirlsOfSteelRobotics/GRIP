@@ -9,11 +9,7 @@ import edu.wpi.grip.core.sockets.InputSocket;
 import edu.wpi.grip.core.sockets.OutputSocket;
 import edu.wpi.grip.core.sockets.SocketHint;
 import edu.wpi.grip.core.sockets.SocketHints;
-import org.bytedeco.javacpp.helper.opencv_core;
-import org.bytedeco.javacpp.helper.opencv_core.CvArr;
-import org.bytedeco.javacpp.opencv_core.Mat;
-import org.bytedeco.javacpp.opencv_core.Point;
-import org.bytedeco.javacpp.opencv_imgproc;
+import org.apache.commons.math3.stat.regression.SimpleRegression;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -94,6 +90,7 @@ public class FindLineInBlobsOperation implements Operation {
     final double pctInliers = pctInliersSocket.getValue().get().doubleValue();
     final List<BlobsReport.Blob> blobs = input.getBlobs();
     final int blobCount = blobs.size();
+    SimpleRegression estimate = new SimpleRegression();
 
     // Variables for storing details on the best fitting line we've seen yet
     double bestScore = Double.MAX_VALUE;
@@ -112,42 +109,42 @@ public class FindLineInBlobsOperation implements Operation {
         if (blobIdx1 == blobIdx2) {
           blobIdx2 = (blobIdx2 + 1) % blobCount;
         }
+        // Iterate over all the blobs, including the two we picked to draw the model line
         // For all blobs, calculate the distance from this blob to a line defined by the two blobs selected above
-        // The sum of those distances becomes the score for this pair of randomly selected blobs
+        // If the distance isn't larger than the threshold, consider this blob an inlier for this model
         double score = 0.0;
         List<BlobsReport.Blob> inliers = new ArrayList<>();
         List<BlobsReport.Blob> outliers = new ArrayList<>();
-        for (int blobIndex = 0; blobIndex < blobCount; blobIndex++) {
-          double distance = findDistance(blobs.get(blobIdx1), blobs.get(blobIdx2), blobs.get(blobIndex));
+        for (BlobsReport.Blob thisBlob : blobs) {
+          double distance = findDistance(blobs.get(blobIdx1), blobs.get(blobIdx2), thisBlob);
           if (distance <= threshold) {
             score += distance;
-            inliers.add(blobs.get(blobIndex));
+            inliers.add(thisBlob);
           } else {
             score += threshold;
-            outliers.add(blobs.get(blobIndex));
+            outliers.add(thisBlob);
           }
         }
-        // Does this line have a better score than any we've seen yet?
-        // Does it also meet our requirements for the minimum percentage of inlier blobs?
-        // If so, save it as the best we've seen.
-        if (score < bestScore && ((double) inliers.size() / (double) blobCount) >= (pctInliers/100.0)) {
+        // Is this a better score than any we've seen?
+        // Does this line meet our requirements for the minimum percentage of inlier blobs?
+        // If so, save it as the best line
+        if (score < bestScore &&
+                ((double) inliers.size() / (double) blobCount >= (pctInliers/100.0))) {
           bestScore = score;
           bestInliers = inliers;
           bestOutliers = outliers;
-          bestLine = new RansacLineReport.Line(blobs.get(blobIdx1).x, blobs.get(blobIdx1).y,
-                  blobs.get(blobIdx2).x, blobs.get(blobIdx2).y);
         }
       }
-      // Using the results of the search above, calculate the least-squares best fit line across all inliers
-/*
-      opencv_core.CvMatArray points = new opencv_core.CvMatArray(bestInliers.size());
+      // Record the line as two points on the best fit line that accounts for all inliers.
+      // This is much more stable than using a straight line between the two randomly selected blobs
+      estimate.clear();
       for (BlobsReport.Blob blob : bestInliers) {
-        points.put(new Point((int) blob.x, (int) blob.y));
+        estimate.addData(blob.x, blob.y);
       }
-      float[] line = new float[4];
-      opencv_imgproc.cvFitLine(points, opencv_imgproc.DIST_L2, 0, 0.01, 0.01, line);
-      bestLine = new RansacLineReport.Line(line[2], line[3], line[2]+line[0], line[3]+line[1]);
-*/
+      double x1 = blobs.get(0).x;
+      double x2 = blobs.get(1).x;
+      bestLine = new RansacLineReport.Line(x1, estimate.predict(x1), x2, estimate.predict(x2));
+
     }
     // Store the results in the RANSACLineReport object
     lineReportSocket.setValue(new RansacLineReport(input.getInput(), threshold, bestInliers, bestOutliers, bestLine));

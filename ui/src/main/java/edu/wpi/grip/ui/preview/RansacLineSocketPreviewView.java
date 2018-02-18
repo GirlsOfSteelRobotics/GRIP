@@ -15,8 +15,15 @@ import javafx.scene.layout.VBox;
 
 import java.util.List;
 
-import static org.bytedeco.javacpp.opencv_core.*;
-import static org.bytedeco.javacpp.opencv_imgproc.*;
+import static org.bytedeco.javacpp.opencv_core.bitwise_xor;
+import static org.bytedeco.javacpp.opencv_core.LINE_8;
+import static org.bytedeco.javacpp.opencv_core.Mat;
+import static org.bytedeco.javacpp.opencv_core.Point;
+import static org.bytedeco.javacpp.opencv_core.Scalar;
+import static org.bytedeco.javacpp.opencv_imgproc.CV_GRAY2BGR;
+import static org.bytedeco.javacpp.opencv_imgproc.cvtColor;
+import static org.bytedeco.javacpp.opencv_imgproc.circle;
+import static org.bytedeco.javacpp.opencv_imgproc.line;
 
 /**
  * A <code>SocketPreviewView</code> that previews sockets containing containing the
